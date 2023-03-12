@@ -1,0 +1,50 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+
+namespace Ogen
+{
+    public class JwtAuthenticationManager
+    {
+        private readonly string key;
+
+        private readonly IDictionary<String, String> users = new Dictionary<String, String>()
+        { {"test","password" },{"test1","pwd" } };
+
+        public JwtAuthenticationManager(string key)
+        {
+            this.key = key;
+            
+        }
+
+        public string Authentifcate(String username, String password)
+        {
+            if(!users.Any(u => u.Key == username && u.Value == password))
+            {
+                return null;
+            }
+
+            JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+            var tokenKey = Encoding.ASCII.GetBytes(key);
+
+            SecurityTokenDescriptor securityTokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                    {
+                        new Claim(ClaimTypes.Name, username),
+                    }),
+
+                Expires = DateTime.UtcNow.AddHours(1),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(tokenKey),
+                    SecurityAlgorithms.HmacSha256Signature),
+
+            };
+            var token = handler.CreateToken(securityTokenDescriptor);
+
+            return handler.WriteToken(token);
+        }
+    }
+}
